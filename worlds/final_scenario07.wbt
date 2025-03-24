@@ -10,7 +10,7 @@ WorldInfo {
 }
 Viewpoint {
   orientation 0.046217742818066405 -0.9092218379658937 -0.41373852807627814 3.1695098588803243
-  position -1.6316129231578431 11.831662458035892 -1.0083607402298287
+  position -1.762076258860415 19.477640746438368 -7.67831897835459
 }
 Background {
   skyColor [
@@ -1181,7 +1181,7 @@ DEF FLOOR Solid {
 Pioneer2_final {
   translation 0 0 -9.05
   rotation 0 1 0 3.14
-  controller "fool_controller"
+  controller "bug"
   extensionSlot [
     DEF FORWARD_CAMERA Camera {
       translation 0 0.255 -0.155

@@ -1,4 +1,4 @@
-#VRML_SIM R2019a utf8
+#VRML_SIM R2020b utf8
 WorldInfo {
   info [
     "The model of the Pioneer 2 robot"
@@ -6,10 +6,11 @@ WorldInfo {
     "Date: 02 SEP 2006"
   ]
   title "Pioneer 2"
+  coordinateSystem "NUE"
 }
 Viewpoint {
   orientation -0.5031713719198124 -0.7022936883610718 -0.50358926295994 1.7651135406140324
-  position -11.935563509676944 31.169164240483614 3.7888596501324194
+  position -8.453659429752339 22.925599987557856 2.8032700964080077
 }
 Background {
   skyColor [
@@ -1038,7 +1039,7 @@ DEF FLOOR Solid {
 Pioneer2_final {
   translation 0 0 -9.05
   rotation 0 1 0 3.14
-  controller "fool_controller"
+  controller "bug"
   extensionSlot [
     DEF FORWARD_CAMERA Camera {
       translation 0 0.255 -0.155
