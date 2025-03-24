@@ -21,7 +21,7 @@ Authors: Bill Athanassiou, Eric Liu
 - Normal: cyan walls, grey floor.
 **Scenario 2:**
 - Cameras don't work in scenario 2?
-
+hhhhh
 **Scenario 3:**
 - Unevenness in lighting conditions, debris.
 - Gets stuck between debris and wall.
