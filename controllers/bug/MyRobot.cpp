@@ -128,6 +128,8 @@ void MyRobot::run()
         double backward_speed = -MAX_SPEED / 5.0;
         double mult_factor = min(1.0, abs(compass_angle - 180.0) / 45.0);
 
+        const double FOLLOW_SPEED = MAX_SPEED * 0.3;
+        const double SLOW_FACTOR = 0.5;
         // send actuators commands according to the mode
         switch (_mode)
         {
@@ -151,15 +153,23 @@ void MyRobot::run()
             }
             break;
         case WALL_FOLLOW:
-            if((back_right > DISTANCE_LIMIT && back_right > front_right) || 
-                    (front_left > DISTANCE_LIMIT && back_left < front_left)) {
-                _left_speed = MAX_SPEED * 0.3;
-                _right_speed = MAX_SPEED * 0.15;
-            }
-            if((front_right > DISTANCE_LIMIT && back_right < front_right) || 
-                    (back_left > DISTANCE_LIMIT && back_left > front_left)) {
-                _left_speed = MAX_SPEED * 0.15;
-                _right_speed = MAX_SPEED * 0.3;
+            if(_backing_direction) { 
+                // wall on left
+                if(back_right > DISTANCE_LIMIT && back_right > front_right) {
+                    _left_speed = FOLLOW_SPEED;
+                    _right_speed = FOLLOW_SPEED * SLOW_FACTOR;
+                } else {
+                    _left_speed = FOLLOW_SPEED * SLOW_FACTOR;
+                    _right_speed = FOLLOW_SPEED;
+                }
+            } else {
+                if(front_left > DISTANCE_LIMIT && back_left < front_left) {
+                    _left_speed = FOLLOW_SPEED;
+                    _right_speed = FOLLOW_SPEED * SLOW_FACTOR;
+                } else {
+                    _left_speed = FOLLOW_SPEED * SLOW_FACTOR;
+                    _right_speed = FOLLOW_SPEED;
+                }
             }
             break;
         case TURN_LEFT:

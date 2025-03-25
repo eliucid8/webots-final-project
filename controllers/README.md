@@ -3,6 +3,7 @@
 Authors: Bill Athanassiou, Eric Liu
 
 ## TODO:
+- [ ] Modify length of distance sensors (check writeup for lab 1 or 2 to find the distance we should modify to, maybe 0.6)
 - [ ] Research Braitenburg constants (use all 16 distance sensors)
 - [ ] Divide responsibilities
 - [ ] Implement bug2 algorithm
@@ -12,15 +13,16 @@ Authors: Bill Athanassiou, Eric Liu
 - [ ] Combine camera with distance sensors
 - [ ] Break code into multiple files/classes?
 - [ ] Detect humans at end of maze
+    - [ ] Experiment with methods for distinguishing human green from wall cyan (lack of blue components in color? Gradient on cylinders?)
 - [ ] Implement human finding mode at end of maze
-- [ ]
 
 
 ## Notes:
 **Scenario 1:**
 - Normal: cyan walls, grey floor.
 **Scenario 2:**
-- Cameras don't work in scenario 2?
+- Extra debris
+- Different lighting conditions.
 
 **Scenario 3:**
 - Unevenness in lighting conditions, debris.
@@ -28,7 +30,6 @@ Authors: Bill Athanassiou, Eric Liu
 
 **Scenario 4:**
 - Very foggy
-- Cameras not displaying anything.
 - Gets into loop near end in sharp corner and debris.
 
 **Scenario 5:**
@@ -47,7 +48,6 @@ Authors: Bill Athanassiou, Eric Liu
 
 **Scenario 8:**
 - Foggy, mild amounts of debris.
-- Cameras black in display?
 
 **Scenario 9:**
 - Weird lighting conditions, light source shining on far side of walls

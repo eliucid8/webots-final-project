@@ -5,7 +5,7 @@ sceneTreePerspectives: 000000ff0000000100000002000000c0000000fa01000000020100000
 maximizedDockId: -1
 centralWidgetVisible: 1
 orthographicViewHeight: 1
-textFiles: 0 "controllers/bug/bug.cpp"
+textFiles: 0 "controllers/fool_controller/fool_controller.cpp"
 consoles: Console:All:All
-renderingDevicePerspectives: Pioneer 2:camera_f;1;1;0.142296;0.134031
-renderingDevicePerspectives: Pioneer 2:camera_s;1;1;0.180031;0.32356
+renderingDevicePerspectives: Pioneer 2:camera_f;1;1;0.640724;0.353926
+renderingDevicePerspectives: Pioneer 2:camera_s;1;1.05625;0.0416662;0.0701569
