@@ -1124,7 +1124,7 @@ DEF FLOOR Solid {
 Pioneer2_final {
   translation 0 0 -9.05
   rotation 0 1 0 3.14
-  controller "fool_controller"
+  controller "bug"
   extensionSlot [
     DEF FORWARD_CAMERA Camera {
       translation 0 0.255 -0.155

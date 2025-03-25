@@ -14,7 +14,7 @@
 MyRobot::MyRobot() : Robot()
 {
     // init default values
-    verbose = true;
+    verbose = false;
     _time_step = 64;
     // initialize motor velocities
     _left_speed = 0;
@@ -66,6 +66,9 @@ void MyRobot::run()
         front_left = _distance_sensor[4]->getValue();
         back_left = _distance_sensor[5]->getValue();
         double front_avg = (_distance_sensor[0]->getValue() + _distance_sensor[1]->getValue()) * 0.5;
+        if (verbose) {
+            cout << "l: " << _distance_sensor[0]->getValue() << " r: " << _distance_sensor[1]->getValue() << " front_avg: " << front_avg << endl;
+        }
 
         const double *compass_val = _my_compass->getValues();
         compass_angle = convert_bearing_to_degrees(compass_val);
@@ -74,7 +77,7 @@ void MyRobot::run()
         RobotMode new_mode = _mode;
         switch(_mode) {
         case FORWARD:
-            if (front_avg > SHORT_LIMIT) {
+            if (_distance_sensor[0]->getValue() > SHORT_LIMIT || _distance_sensor[1]->getValue() > SHORT_LIMIT) {
                 new_mode = OBSTACLE_AVOID;
                 _backing_direction = !_backing_direction;
             }
@@ -130,26 +133,27 @@ void MyRobot::run()
 
         const double FOLLOW_SPEED = MAX_SPEED * 0.3;
         const double SLOW_FACTOR = 0.5;
+        double speed_percent = max(0.1, (500 - front_avg) * 0.002);
         // send actuators commands according to the mode
         switch (_mode)
         {
         case FORWARD:
             // cout << "Moving forward." << endl;
-            _left_speed = MAX_SPEED * 0.5;
-            _right_speed = MAX_SPEED * 0.5;
+            _left_speed = MAX_SPEED * speed_percent;
+            _right_speed = MAX_SPEED * speed_percent;
             break;
         case OBSTACLE_AVOID:
             if (_backing_direction)
             {
                 // cout << "Backing up and turning left." << endl;
                 _left_speed = -MAX_SPEED / 6.0;
-                _right_speed = MAX_SPEED / 9.0;
+                _right_speed = MAX_SPEED / 6.0;
             }
             else
             {
                 // cout << "Backing up and turning right." << endl;
                 _right_speed = -MAX_SPEED / 6.0;
-                _left_speed = MAX_SPEED / 9.0;
+                _left_speed = MAX_SPEED / 6.0;
             }
             break;
         case WALL_FOLLOW:

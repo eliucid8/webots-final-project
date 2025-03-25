@@ -4,10 +4,8 @@ Authors: Bill Athanassiou, Eric Liu
 
 ## TODO:
 - [ ] Modify length of distance sensors (check writeup for lab 1 or 2 to find the distance we should modify to, maybe 0.6)
-- [ ] Research Braitenburg constants (use all 16 distance sensors)
-- [ ] Divide responsibilities
 - [ ] Implement bug2 algorithm
-- [ ] Implement P control for turning?
+- [ ] Implement P control for turning
 - [ ] Implement kalman filter for odometry and GPS?
     - [ ] Figure out error of odometry
 - [ ] Combine camera with distance sensors
@@ -15,6 +13,11 @@ Authors: Bill Athanassiou, Eric Liu
 - [ ] Detect humans at end of maze
     - [ ] Experiment with methods for distinguishing human green from wall cyan (lack of blue components in color? Gradient on cylinders?)
 - [ ] Implement human finding mode at end of maze
+
+- [x] Divide responsibilities
+- [x] ~~Research Braitenburg constants (use all 16 distance sensors)~~ (not needed)
+- [x] Implement P control for forward movement
+- [x] Improve front obstacle detection (front_avg doesn't work well for slanted surfaces)
 
 
 ## Notes:
