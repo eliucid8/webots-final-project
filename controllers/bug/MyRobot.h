@@ -16,14 +16,21 @@
 #include <webots/Motor.hpp>
 #include <webots/Compass.hpp>
 #include <webots/DistanceSensor.hpp>
+#include <webots/PositionSensor.hpp>
+#include <webots/Keyboard.hpp>
+#include <webots/GPS.hpp>
+#include <webots/Camera.hpp>
 #include <math.h>
 
 using namespace std;
 using namespace webots;
 
 #define MAX_SPEED       10
-#define DESIRED_ANGLE   179
 
+#define WHEELS_DISTANCE 0.3606   //[=] meters
+#define WHEEL_RADIUS    0.0825 //[=] meters
+
+#define ENCODER_TICS_PER_RADIAN 1
 
 //////////////////////////////////////////////
 
@@ -65,10 +72,10 @@ class MyRobot : public Robot {
         void run();
         
         /**
-         * @brief Lock state of robot for a certain number of ticks
+         * @brief Go to point
          */
-        void lock_state(int ticks);
-
+        void go_to_point(double x, double y);
+        
         /**
          * @brief Function for converting bearing vector from compass to angle (in degrees).
          * @param in_vector Input vector with the values to convert.
@@ -80,6 +87,36 @@ class MyRobot : public Robot {
          * Print robot current state to cout.
          */
         void print_mode();
+        
+        /**
+         * @brief Updates the odometry of the robot in meters and radians. The atributes _x, _y, _theta are updated.
+         */
+        void compute_odometry();
+
+        /**
+         * @brief Prints in the standard output the x,y,theta coordinates of the robot.
+         */
+        void print_odometry();
+        
+        /**
+         * @brief Prints in the standard output the x,y,theta coordinates of the robot.
+         * This method uses the encoder resolution and the wheel radius defined in the model of the robot.
+         *
+         * @param tics raw value read from an encoder
+         * @return meters corresponding to the tics value
+         */
+        float encoder_tics_to_meters(float tics);
+            
+        /**
+         * @brief Recalculates _theta_goal with current position information
+         */
+        void update_theta_goal();
+        
+        /**
+         * @brief Checks whether the robot has reached the goal established for this controller.
+         * @return true if the robot has reached the goal established for this controller; false otherwise.
+         */
+        bool goal_reached();
 
     private:
         // Whether to print verbose
@@ -88,14 +125,16 @@ class MyRobot : public Robot {
         // The time step
         int _time_step;
         
-        // how many ticks the robot will be locked in state for
-        int _state_timer;
-        
         // which direction to back the robot back in.
         bool _backing_direction;
         
         // velocities
         double _left_speed, _right_speed;
+        
+        double _x, _y, _x_goal, _y_goal;   // [=] meters
+        double _theta, _theta_goal;   // [=] rad
+        
+        float _sr, _sl;  // [=] meters
 
         // Sensors
         Compass *_my_compass;
@@ -103,13 +142,24 @@ class MyRobot : public Robot {
         // Motors
         Motor *_left_wheel_motor;
         Motor *_right_wheel_motor;
-        
-        RobotMode _mode;
-        
-        DistanceSensor*_distance_sensor[NUM_DISTANCE_SENSOR];
+
+        // Motor Position Sensor
+        PositionSensor* _left_wheel_sensor;
+        PositionSensor* _right_wheel_sensor;
+
+        // GPS sensor
+        GPS* _my_gps;
+
+        DistanceSensor *_distance_sensor[NUM_DISTANCE_SENSOR];
         const char *ds_name[NUM_DISTANCE_SENSOR] = {"ds1", 
         "ds14", "ds11", "ds12", "ds3", "ds4"};
+        
+        Camera* _front_cam; 
+        Camera* _spher_cam;
+
         const char* mode_names[7] = {"STOP", "FORWARD", "BACK_LEFT", "BACK_RIGHT", "OBSTACLE_AVOID", "ORIENT", "WALL FOLLOW"};
+
+        RobotMode _mode;
 };
 
 #endif
