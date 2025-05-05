@@ -115,9 +115,34 @@ void MyRobot::run() {
     
     // ====NOTE: Find green pillars here====
 
+    // Try up to 10 times to detect green object
+    // for (int i = 0; i < 10; ++i) {
+        
+    //     // Perform one time step of the simulation; exit loop if simulation is stopped or interrupted
+    //     if (step(_time_step) == -1) break;
+        
+    //     // Check if a green object has been detected
+    //     if (detect_victim()) {
+    //         cout << "Green object detected!" << endl;
+    //         break;  // Stop checking once the object is found
+    //     } else {
+    //         cout << "No green object detected yet." << endl;
+    //     }
+    // }
+    while (step(_time_step) != -1) {
+        if (detect_victim()) {
+            cout << "Green object detected!" << endl;
+            break;
+        }
+        else {
+            cout << "No green object detected yet." << endl;
+        }
+    }
+    // =====GREEN PILLAR CODE ABOVE
     go_to_point(start_x, start_y);
     cout << "Start Reached, GPS: (" << _my_gps->getValues()[2] << ", " << _my_gps->getValues()[0] << ")" << endl;
 }
+
 
 void MyRobot::go_to_point(double x, double y)
 {
@@ -176,6 +201,15 @@ void MyRobot::go_to_point(double x, double y)
             }
         break;
         case WALL_FOLLOW:
+            // ++++ added yellow line testing
+                if (detect_yellow_line()) {
+                    new_mode = YELLOW_AVOID;
+                    break;
+                }
+
+            // ++++ added yellow line testing ABOVE
+
+
             // break off from wall when free
             if(compass_angle > _theta_goal - 120 && compass_angle < _theta_goal - 60 && back_left == 0 && front_left == 0) {
                 new_mode = ORIENT;
@@ -204,6 +238,20 @@ void MyRobot::go_to_point(double x, double y)
                 new_mode = FORWARD;
             }
         break;
+
+        // ++++++ added yellow line testing
+        case YELLOW_AVOID:
+            _left_speed = -MAX_SPEED * 0.2;
+            _right_speed = MAX_SPEED * 0.2;
+
+            // Optional: go back to wall-follow once clear
+            if (!detect_yellow_line()) {
+                new_mode = WALL_FOLLOW;
+            }
+        break;
+        // ++++++ added yellow line testing
+
+
         default:
             new_mode = ORIENT;
         break;
@@ -298,6 +346,7 @@ void MyRobot::go_to_point(double x, double y)
     }
 }
 
+
 //////////////////////////////////////////////
 
 double MyRobot::convert_bearing_to_degrees(const double *in_vector)
@@ -368,7 +417,7 @@ float MyRobot::encoder_tics_to_meters(float tics)
 
 void MyRobot::print_odometry()
 {
-    cout << "x:" << _x << " y:" << _y << endl;
+    std::cout << "x:" << _x << " y:" << _y << endl;
 }
 
 //////////////////////////////////////////////
@@ -397,4 +446,57 @@ void MyRobot::update_theta_goal()
         deg = 0.0;
     }
     _theta_goal = deg;
+}
+
+bool MyRobot::detect_yellow_line() {
+    const unsigned char* image = _front_cam->getImage();
+    int width = _front_cam->getWidth();
+    int height = _front_cam->getHeight();
+    int yellow_pixel_count = 0;
+
+    // Scan bottom third of the image where the floor is visible
+    for (int y = height * 2 / 3; y < height; y += 2) {
+        for (int x = 0; x < width; x += 2) {
+            int r = _front_cam->imageGetRed(image, width, x, y);
+            int g = _front_cam->imageGetGreen(image, width, x, y);
+            int b = _front_cam->imageGetBlue(image, width, x, y);
+            
+            //std::cout << "red: " << r << " g:   " << g << endl;
+            // (r-g) checks to see difference of red/green values is close as necesary for yellow
+            if (r > 180 && g > 180 && b < 90 && abs(r - g) < 40) {
+                yellow_pixel_count++;
+                std::cout << "count" << endl;
+
+            }
+        }
+    }
+    return  yellow_pixel_count > 50;
+}
+
+
+bool MyRobot::detect_victim() {
+    const unsigned char* image = _front_cam->getImage();
+    int width = _front_cam->getWidth();
+    int height = _front_cam->getHeight();
+    int green_pixel_count = 0;
+
+    // loop through image rows, check every 2 pixels for performance optimisation
+    for (int y = 0; y < height; y +=2) {
+        for (int x = 0; x < width; x+= 2) {
+            int r = _front_cam->imageGetRed(image, width, x, y);
+            int g = _front_cam->imageGetGreen(image, width, x, y);
+            int b = _front_cam->imageGetBlue(image, width, x, y);
+
+            // check if green (g) is dominant component
+            // greater than 60 and at least 10 more than both red (r) and blue (b)
+            //std::cout << "Green: " << g << endl;
+            if (g > 60 && g > r + 10 && g > b + 10) {
+                green_pixel_count++;
+        }
+    }
+    std::cout << "Green pixels detected: " << green_pixel_count << std::endl;
+
+    // bool will return true if green_pixel_count > 100 (threshold number)
+    return green_pixel_count > 30; 
+}
 }

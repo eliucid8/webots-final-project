@@ -48,6 +48,7 @@ enum RobotMode {
   OBSTACLE_AVOID,
   ORIENT,
   WALL_FOLLOW,
+  YELLOW_AVOID
 };
 
 //////////////////////////////////////////////
@@ -118,6 +119,11 @@ class MyRobot : public Robot {
          */
         bool goal_reached();
 
+        bool detect_yellow_line();
+
+        bool detect_victim();
+
+
     private:
         // Whether to print verbose
         bool verbose;
@@ -157,7 +163,7 @@ class MyRobot : public Robot {
         Camera* _front_cam; 
         Camera* _spher_cam;
 
-        const char* mode_names[7] = {"STOP", "FORWARD", "BACK_LEFT", "BACK_RIGHT", "OBSTACLE_AVOID", "ORIENT", "WALL FOLLOW"};
+        const char* mode_names[8] = {"STOP", "FORWARD", "BACK_LEFT", "BACK_RIGHT", "OBSTACLE_AVOID", "ORIENT", "WALL FOLLOW", "YELLOW_AVOID"};
 
         RobotMode _mode;
 };

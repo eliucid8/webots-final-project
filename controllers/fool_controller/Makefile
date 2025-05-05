@@ -36,6 +36,8 @@
 ### ---- C Sources ----
 ### if your program uses several C source files:
 ### C_SOURCES = my_plugin.c my_clever_algo.c my_graphics.c
+CXX_SOURCES = fool_controller.cpp
+
 ###
 ### ---- C++ Sources ----
 ### if your program uses several C++ source files:
