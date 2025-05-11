@@ -39,6 +39,8 @@ using namespace webots;
 #define SHORT_LIMIT 900
 #define MAX_SPEED 10
 
+
+
 // working modes
 enum RobotMode {
   STOP,
@@ -48,7 +50,7 @@ enum RobotMode {
   OBSTACLE_AVOID,
   ORIENT,
   WALL_FOLLOW,
-  YELLOW_AVOID
+  YELLOW_CROSS
 };
 
 //////////////////////////////////////////////
@@ -123,6 +125,35 @@ class MyRobot : public Robot {
 
         bool detect_victim();
 
+        bool _passed_yellow_line;
+
+        bool has_crossed_yellow_line();
+
+        bool returning_rescue;
+
+        bool in_cooldown;
+
+        int cooldown_counter;
+
+        int victim_count;
+
+        void handle_victim_detection();
+
+        void spin_in_place();
+
+        static const int COOLDOWN_STEPS = 15000 / 64;  // 15 seconds
+
+        void bug_to_victim();
+
+        void turn_relative_angle(double degrees);
+
+        bool performed_turnaround;
+
+        void check_and_handle_turnaround();
+
+
+
+
 
     private:
         // Whether to print verbose
@@ -163,7 +194,7 @@ class MyRobot : public Robot {
         Camera* _front_cam; 
         Camera* _spher_cam;
 
-        const char* mode_names[8] = {"STOP", "FORWARD", "BACK_LEFT", "BACK_RIGHT", "OBSTACLE_AVOID", "ORIENT", "WALL FOLLOW", "YELLOW_AVOID"};
+        const char* mode_names[8] = {"STOP", "FORWARD", "BACK_LEFT", "BACK_RIGHT", "OBSTACLE_AVOID", "ORIENT", "WALL FOLLOW", "YELLOW_CROSS"};
 
         RobotMode _mode;
 };
