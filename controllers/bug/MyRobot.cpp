@@ -494,9 +494,10 @@ bool MyRobot::detect_victim() {
                 green_pixel_count++;
         }
     }
-    std::cout << "Green pixels detected: " << green_pixel_count << std::endl;
-
+        if(verbose) {
+            std::cout << "Green pixels detected: " << green_pixel_count << std::endl;
+        }
+    }
     // bool will return true if green_pixel_count > 100 (threshold number)
     return green_pixel_count > 30; 
-}
 }
