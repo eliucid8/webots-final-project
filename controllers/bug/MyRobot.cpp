@@ -138,95 +138,177 @@ void MyRobot::run() {
     cout << "Start Reached, GPS: (" << _my_gps->getValues()[2] << ", " << _my_gps->getValues()[0] << ")" << endl;
 }
 
+// void MyRobot::rescue_procedure() {
+//     cout << "Starting rescue" << endl;
+//     double victim1x = 0.0;
+//     double victim1y = 0.0;
+
+//     bool move_around_pillar = false;
+
+//     while(step(_time_step) != -1) {
+//         // cout << "Passed Yellow Line: " << _passed_yellow_line << endl;
+//         // yellow line exit turnaround test *****
+//         check_and_handle_turnaround();
+//         compute_odometry();
+//         print_odometry();
+
+//         if(move_around_pillar) {
+//             cout << "Moving around pillar" << endl;
+//             double back_right = _distance_sensor[2]->getValue();
+//             double front_right = _distance_sensor[3]->getValue();
+//             double front_left = _distance_sensor[4]->getValue();
+//             double back_left = _distance_sensor[5]->getValue();
+//             const double FOLLOW_SPEED = MAX_SPEED * 0.3;
+//             const double SLOW_FACTOR = 0.5;
+//             if(back_right > DISTANCE_LIMIT && back_right > front_right) {
+//                 _left_speed = FOLLOW_SPEED;
+//                 _right_speed = FOLLOW_SPEED * SLOW_FACTOR;
+//             } else {
+//                 _left_speed = FOLLOW_SPEED * SLOW_FACTOR;
+//                 _right_speed = FOLLOW_SPEED;
+//             }
+//             _left_wheel_motor->setVelocity(_left_speed);
+//             _right_wheel_motor->setVelocity(_right_speed);
+
+//             const double dist_from_find =abs(_x - victim1x) + abs(_y - victim1y);
+//             cout << "distance from first pillar:" << dist_from_find << endl;
+//             if(dist_from_find > 1) {
+
+//                 move_around_pillar = false;
+//             }
+//         } 
+//         else {
+        
+//         // Victim detection logic
+//         // if (/*_passed_yellow_line && */victim_count < 2 && !in_cooldown) {
+//             if (detect_victim()) {
+//                 cout << "Victim green found " << endl;
+//                 // move toward victim
+//                 bug_to_victim();
+//                 if(victim_count < 1 || (abs(_x - victim1x) > 1.1 || abs(_y - victim1y) > 1.1 )) {
+//                     if(victim_count == 0) {
+//                         victim1x = _x;
+//                         victim1y = _y;
+//                     }
+//                     handle_victim_detection();  // spin, count victim, start cooldown
+//                     //break;
+//                     turn_relative_angle(90);
+//                 }
+//                 else {
+//                     cout << "too close to previous rescue. finding different human." << endl;
+//                     move_around_pillar = true;
+//                 }
+//             } else {
+//                 cout << "Turning aimlessly" << endl;
+//                 _left_wheel_motor->setVelocity(-0.2 * MAX_SPEED);
+//                 _right_wheel_motor->setVelocity(0.2 * MAX_SPEED);
+
+//                 // cout << "No victim seen — switching to WALL_FOLLOW mode" << endl;
+//                 //  new_mode = WALL_FOLLOW;
+//             }
+//             // }
+//         }
+//         // if (in_cooldown) {
+//         //     cooldown_counter++;
+//         //     if (cooldown_counter >= COOLDOWN_STEPS) {
+//         //         in_cooldown = false;
+//         //         cooldown_counter = 0;
+//         //         cout << "Cooldown complete. Victim detection re-enabled." << endl;
+//         //     }
+//         // }
+    
+//         // // ++++ Yellow line detection --> zone transition
+//         // if (!_passed_yellow_line && detect_yellow_line()) {
+//         //     cout << "Yellow line in SIGHT — switching to YELLOW_CROSS func" << endl;
+//         //         new_mode = YELLOW_CROSS;
+//         //         break;
+//         //     }
+//         if (victim_count >= 2) {
+//             return;
+//         }
+//     }
+// }
+
 void MyRobot::rescue_procedure() {
     cout << "Starting rescue" << endl;
+
     double victim1x = 0.0;
     double victim1y = 0.0;
 
-    bool move_around_pillar = false;
-
-    while(step(_time_step) != -1) {
-        // cout << "Passed Yellow Line: " << _passed_yellow_line << endl;
-        // yellow line exit turnaround test *****
-        check_and_handle_turnaround();
+    // First victim detection loop
+    while (step(_time_step) != -1) {
         compute_odometry();
 
-        if(move_around_pillar) {
-            cout << "Moving around pillar" << endl;
-            double back_right = _distance_sensor[2]->getValue();
-            double front_right = _distance_sensor[3]->getValue();
-            double front_left = _distance_sensor[4]->getValue();
-            double back_left = _distance_sensor[5]->getValue();
-            const double FOLLOW_SPEED = MAX_SPEED * 0.3;
-            const double SLOW_FACTOR = 0.5;
-            if(back_right > DISTANCE_LIMIT && back_right > front_right) {
-                _left_speed = FOLLOW_SPEED;
-                _right_speed = FOLLOW_SPEED * SLOW_FACTOR;
-            } else {
-                _left_speed = FOLLOW_SPEED * SLOW_FACTOR;
-                _right_speed = FOLLOW_SPEED;
-            }
-            _left_wheel_motor->setVelocity(_left_speed);
-            _right_wheel_motor->setVelocity(_right_speed);
+        if (detect_victim()) {
+            cout << "First victim detected!" << endl;
+            bug_to_victim();
+
 
             const double compass_val = *(_my_compass->getValues());
-            const double dist_from_find =abs(_x + cos(compass_val + M_PI) - victim1x) + abs(_y + sin(compass_val + M_PI) - victim1y);
-            cout << "distance from first pillar:" << dist_from_find << endl;
-            if(dist_from_find > 1) {
+            // Save location of first victim
+            victim1x = _x + cos(compass_val + M_PI);
+            victim1y = _y + sin(compass_val + M_PI);
 
-                move_around_pillar = false;
-            }
-        } 
-        else {
-        
-        // Victim detection logic
-        // if (/*_passed_yellow_line && */victim_count < 2 && !in_cooldown) {
+            handle_victim_detection();
+            break;  // Exit to start structured second search
+        }
+
+        // Default search motion: turn in place
+        _left_wheel_motor->setVelocity(-0.2 * MAX_SPEED);
+        _right_wheel_motor->setVelocity(0.2 * MAX_SPEED);
+    }
+
+    // Start structured search for second victim
+    bool second_victim_found = false;
+
+    while (step(_time_step) != -1 && victim_count < 2 && !second_victim_found) {
+        compute_odometry();
+        print_odometry();
+
+        // === Wall-follow for 5 seconds ===
+        for (int i = 0; i < 100; ++i) {  // 80 steps × 64ms ≈ 5s
+            if (step(_time_step) == -1) break;
+
+            wall_follow_step();  // wall follow for 5s
+
             if (detect_victim()) {
-                cout << "Victim green found " << endl;
-                
-                const double *compass_val = _my_compass->getValues();
-                
-                // move toward victim
-                bug_to_victim();
-                if(victim_count < 1 || (abs(_x + cos(*compass_val) - victim1x) > 1.1 || _y + sin(*compass_val) - victim1y > 1.1 )) {
-                    if(victim_count == 0) {
-                        const double *compass_val = _my_compass->getValues();
-                        victim1x = _x + cos(*compass_val + M_PI);
-                        victim1y = _y + sin(*compass_val + M_PI);
-                    }
-                    handle_victim_detection();  // spin, count victim, start cooldown
-                    //break;
-                    turn_relative_angle(90);
+                // Avoid double-counting same victim
+                const double compass_val = *(_my_compass->getValues());
+                double dist_from_first = abs(_x + cos(compass_val + M_PI) - victim1x) + abs(_y + sin(compass_val + M_PI) - victim1y);
+                if (dist_from_first > 1.1) {
+                    cout << "Second victim found during wall-follow!" << endl;
+                    bug_to_victim();
+                    handle_victim_detection();
+                    second_victim_found = true;
+                    break;
+                } else {
+                    cout << "Victim too close to first — ignoring." << endl;
                 }
-                else {
-                    cout << "too close to previous rescue. finding different human." << endl;
-                    move_around_pillar = true;
-                }
-            } else {
-                // cout << "Turning aimlessly" << endl;
-                _left_wheel_motor->setVelocity(-0.2 * MAX_SPEED);
-                _right_wheel_motor->setVelocity(0.2 * MAX_SPEED);
             }
-            // }
         }
-        // if (in_cooldown) {
-        //     cooldown_counter++;
-        //     if (cooldown_counter >= COOLDOWN_STEPS) {
-        //         in_cooldown = false;
-        //         cooldown_counter = 0;
-        //         cout << "Cooldown complete. Victim detection re-enabled." << endl;
-        //     }
-        // }
-    
-        // // ++++ Yellow line detection --> zone transition
-        // if (!_passed_yellow_line && detect_yellow_line()) {
-        //     cout << "Yellow line in SIGHT — switching to YELLOW_CROSS func" << endl;
-        //         new_mode = YELLOW_CROSS;
-        //         break;
-        //     }
-        if (victim_count >= 2) {
-            return;
+
+        if (second_victim_found) break;
+
+        // === Spin in place and scan ===
+        cout << "No victim during follow — spinning to scan" << endl;
+        spin_in_place();
+
+        if (detect_victim()) {
+                const double compass_val = *(_my_compass->getValues());
+                double dist_from_first = abs(_x + cos(compass_val + M_PI) - victim1x) + abs(_y + sin(compass_val + M_PI) - victim1y);
+            if (dist_from_first > 1.1) {
+                cout << "Second victim found during spin!" << endl;
+                bug_to_victim();
+                handle_victim_detection();
+                second_victim_found = true;
+                break;
+            } else {
+                cout << "Victim too close to first — ignoring." << endl;
+            }
         }
+
+        // No victim found — repeat wall-follow next
+        cout << "No victim seen — repeating search loop..." << endl;
     }
 }
 
@@ -590,7 +672,7 @@ bool MyRobot::detect_yellow_line() {
     // if (z_pos < 6.0) {
     //     return false;      // Too close, probably first line
     // }
-    if (_x < _x_goal) {
+    if (( _x_goal > 0 && _x < _x_goal) || (_x_goal < 0 && _x > _x_goal)) {
         return false;
     }
 
@@ -691,8 +773,12 @@ void MyRobot::bug_to_victim() {
     cout << "Approaching victim..." << endl;
 
     const double APPROACH_SPEED = MAX_SPEED * 0.2;  // slow, controlled approach
-    const double STOP_DISTANCE = 400.0;             // stop when front sensors > this (tune as needed)
-    const int MAX_APPROACH_STEPS = 500;             // timeout to prevent infinite loop
+    const double STOP_DISTANCE = 350.0;             // stop when front sensors > this (tune as needed)
+    const double STOP_DISTANCE_SINGLE_REGISTER = 150.0;             
+
+    const int MAX_APPROACH_STEPS = 100;             // timeout to prevent infinite loop
+
+    // if only 1 sensor triggered, stop distance 150, otherwise for 2, 350
 
     int steps = 0;
 
@@ -701,37 +787,43 @@ void MyRobot::bug_to_victim() {
         compute_odometry();
 
         // Check distance sensors 
-        double front_avg = (_distance_sensor[0]->getValue() + _distance_sensor[1]->getValue()) * 0.5;
-        // cout << "Front avg: " << front_avg << endl;
+        double front_left = _distance_sensor[0]->getValue();
+        double front_right = _distance_sensor[1]->getValue();
+        double front_avg = (front_left + front_right) * 0.5;
+        cout << "Front left: " << front_left << endl;
+        cout << "Front right: " << front_right << endl;
+        // for (int i = 0; i < 7; i++) {
+        //     std::cout << "Sensor " << i << ": " << _distance_sensor[i]->getValue() << std::endl;
+        // }
 
-        // Stop if within target distance
-        if (front_avg > STOP_DISTANCE) {
-            std::cout << "Victim within 1 meter — stopping approach." << std::endl;
-            break;
+        cout << "Front avg: " << front_avg << endl;
+
+        // STOP if above 2 sensor threshold
+        if (front_left > 0 && front_right > 0) {
+            double front_avg = (front_left + front_right) * 0.5;
+            std::cout << "Front avg: " << front_avg << std::endl;
+
+            if (front_avg > STOP_DISTANCE) {
+                std::cout << "Victim within 1 meter — stopping approach." << std::endl;
+                break;
+            }
+        // if only one sensor has readings (e.g. victim is on right side of screen), then lower threshold ie. single_register etc
+        } else if (front_left > 0 || front_right > 0) {
+            if (front_avg > STOP_DISTANCE_SINGLE_REGISTER) {
+                std::cout << "Victim within 1 meter — stopping approach." << std::endl;
+                break;
+            }
         }
+        else {
+            std::cout << "Sensors reading zero — target may be too far." << std::endl;
+        }
+        ///*** new
 
         // Optionally, stop if green is no longer detected
         if (!detect_victim()) {
             cout << "Lost sight of green object — abort approach." << endl;
             break;
         }
-        // // Directional steering based on IR imbalance
-        // double imbalance = front_right - front_left;
-
-        // if (imbalance > 200.0) {
-        //     // Victim skewed left → turn right 10°
-        //     cout << " Victim skewed left — turning right 10°." << endl;
-        //     _left_wheel_motor->setVelocity(0);
-        //     _right_wheel_motor->setVelocity(0);
-        //     turn_relative_angle(5.0);
-        // }
-        // else if (imbalance < -200.0) {
-        //     // Victim skewed right → turn left 10°
-        //     cout << " Victim skewed right — turning left 10°." << endl;     // ****testing line
-        //     _left_wheel_motor->setVelocity(0);
-        //     _right_wheel_motor->setVelocity(0);
-        //     turn_relative_angle(-5.0);
-        // }
          // Resume forward movement
         _left_wheel_motor->setVelocity(APPROACH_SPEED);
         _right_wheel_motor->setVelocity(APPROACH_SPEED);
@@ -832,4 +924,36 @@ void MyRobot::check_and_handle_turnaround() {
         _theta_goal = convert_bearing_to_degrees(_my_compass->getValues());
         performed_turnaround = true;
     }
+}
+
+// separate wall follow functionality
+void MyRobot::wall_follow_step() {
+    double back_right = _distance_sensor[2]->getValue();
+    double front_right = _distance_sensor[3]->getValue();
+    double front_left = _distance_sensor[4]->getValue();
+    double back_left = _distance_sensor[5]->getValue();
+
+    const double FOLLOW_SPEED = MAX_SPEED * 0.3;
+    const double SLOW_FACTOR = 0.5;
+
+    if (_backing_direction) {
+        if (back_right > DISTANCE_LIMIT && back_right > front_right) {
+            _left_speed = FOLLOW_SPEED;
+            _right_speed = FOLLOW_SPEED * SLOW_FACTOR;
+        } else {
+            _left_speed = FOLLOW_SPEED * SLOW_FACTOR;
+            _right_speed = FOLLOW_SPEED;
+        }
+    } else {
+        if (front_left > DISTANCE_LIMIT && back_left < front_left) {
+            _left_speed = FOLLOW_SPEED;
+            _right_speed = FOLLOW_SPEED * SLOW_FACTOR;
+        } else {
+            _left_speed = FOLLOW_SPEED * SLOW_FACTOR;
+            _right_speed = FOLLOW_SPEED;
+        }
+    }
+
+    _left_wheel_motor->setVelocity(_left_speed);
+    _right_wheel_motor->setVelocity(_right_speed);
 }
