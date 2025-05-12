@@ -153,6 +153,9 @@ class MyRobot : public Robot {
 
         void rescue_procedure();
 
+        void wall_follow_step();
+
+
 
 
     private:

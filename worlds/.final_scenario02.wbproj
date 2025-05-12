@@ -7,5 +7,5 @@ centralWidgetVisible: 1
 orthographicViewHeight: 1
 textFiles: 0 "controllers/bug/Makefile"
 consoles: Console:All:All
-renderingDevicePerspectives: Pioneer 2:camera_f;1;1;0.636245;0.0085034
+renderingDevicePerspectives: Pioneer 2:camera_f;1;1;0.634992;0.0085034
 renderingDevicePerspectives: Pioneer 2:camera_s;1;1.56875;0;0
