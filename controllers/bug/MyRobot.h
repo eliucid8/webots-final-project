@@ -34,7 +34,7 @@ using namespace webots;
 
 //////////////////////////////////////////////
 
-#define NUM_DISTANCE_SENSOR 6
+#define NUM_DISTANCE_SENSOR 8
 #define DISTANCE_LIMIT 200
 #define SHORT_LIMIT 900
 #define MAX_SPEED 10
@@ -195,7 +195,7 @@ class MyRobot : public Robot {
 
         DistanceSensor *_distance_sensor[NUM_DISTANCE_SENSOR];
         const char *ds_name[NUM_DISTANCE_SENSOR] = {"ds1", 
-        "ds14", "ds11", "ds12", "ds3", "ds4"};
+        "ds14", "ds11", "ds12", "ds3", "ds4", "ds2", "ds13"};
         
         Camera* _front_cam; 
         Camera* _spher_cam;

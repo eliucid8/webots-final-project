@@ -123,7 +123,7 @@ void MyRobot::run() {
     go_to_point(_x_goal, _y_goal);
     cout << "Goal Reached: (" << _x << ", " << _y << ")" << endl;
 
-    for(int i = 0; i < 10; i++) {
+    for(int i = 0; i < 20; i++) {
         _left_wheel_motor->setVelocity(0.5 * MAX_SPEED);
         _right_wheel_motor->setVelocity(0.5 * MAX_SPEED);
         step(_time_step);        
@@ -291,6 +291,7 @@ void MyRobot::go_to_point(double x, double y)
         front_left = _distance_sensor[4]->getValue();
         back_left = _distance_sensor[5]->getValue();
         double front_avg = (_distance_sensor[0]->getValue() + _distance_sensor[1]->getValue()) * 0.5;
+        double sides_avg = (_distance_sensor[6]->getValue() + _distance_sensor[7]->getValue()) * 0.5;
         if (verbose) {
             cout << "l: " << _distance_sensor[0]->getValue() << " r: " << _distance_sensor[1]->getValue() << " front_avg: " << front_avg << endl;
         }
@@ -340,7 +341,7 @@ void MyRobot::go_to_point(double x, double y)
                 new_mode = ORIENT;
             }
             // turn interior corner
-            if(front_avg > SHORT_LIMIT) {
+            if(sides_avg > SHORT_LIMIT || (_distance_sensor[0]->getValue()) > SHORT_LIMIT || (_distance_sensor[1]->getValue()) > SHORT_LIMIT) {
                 if(back_right > DISTANCE_LIMIT || front_right > DISTANCE_LIMIT ) {
                     new_mode = TURN_LEFT;
                 }
