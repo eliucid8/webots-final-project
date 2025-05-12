@@ -123,6 +123,14 @@ void MyRobot::run() {
     go_to_point(_x_goal, _y_goal);
     cout << "Goal Reached: (" << _x << ", " << _y << ")" << endl;
 
+    for(int i = 0; i < 10; i++) {
+        _left_wheel_motor->setVelocity(0.5 * MAX_SPEED);
+        _right_wheel_motor->setVelocity(0.5 * MAX_SPEED);
+        step(_time_step);        
+        _left_wheel_motor->setVelocity(0 * MAX_SPEED);
+        _right_wheel_motor->setVelocity(0 * MAX_SPEED);
+    }
+
     // find and rescue humans;
     rescue_procedure();
 
@@ -136,98 +144,15 @@ void MyRobot::run() {
 
     go_to_point(start_x, start_y);
     cout << "Start Reached, GPS: (" << _my_gps->getValues()[2] << ", " << _my_gps->getValues()[0] << ")" << endl;
-}
-
-// void MyRobot::rescue_procedure() {
-//     cout << "Starting rescue" << endl;
-//     double victim1x = 0.0;
-//     double victim1y = 0.0;
-
-//     bool move_around_pillar = false;
-
-//     while(step(_time_step) != -1) {
-//         // cout << "Passed Yellow Line: " << _passed_yellow_line << endl;
-//         // yellow line exit turnaround test *****
-//         check_and_handle_turnaround();
-//         compute_odometry();
-//         print_odometry();
-
-//         if(move_around_pillar) {
-//             cout << "Moving around pillar" << endl;
-//             double back_right = _distance_sensor[2]->getValue();
-//             double front_right = _distance_sensor[3]->getValue();
-//             double front_left = _distance_sensor[4]->getValue();
-//             double back_left = _distance_sensor[5]->getValue();
-//             const double FOLLOW_SPEED = MAX_SPEED * 0.3;
-//             const double SLOW_FACTOR = 0.5;
-//             if(back_right > DISTANCE_LIMIT && back_right > front_right) {
-//                 _left_speed = FOLLOW_SPEED;
-//                 _right_speed = FOLLOW_SPEED * SLOW_FACTOR;
-//             } else {
-//                 _left_speed = FOLLOW_SPEED * SLOW_FACTOR;
-//                 _right_speed = FOLLOW_SPEED;
-//             }
-//             _left_wheel_motor->setVelocity(_left_speed);
-//             _right_wheel_motor->setVelocity(_right_speed);
-
-//             const double dist_from_find =abs(_x - victim1x) + abs(_y - victim1y);
-//             cout << "distance from first pillar:" << dist_from_find << endl;
-//             if(dist_from_find > 1) {
-
-//                 move_around_pillar = false;
-//             }
-//         } 
-//         else {
-        
-//         // Victim detection logic
-//         // if (/*_passed_yellow_line && */victim_count < 2 && !in_cooldown) {
-//             if (detect_victim()) {
-//                 cout << "Victim green found " << endl;
-//                 // move toward victim
-//                 bug_to_victim();
-//                 if(victim_count < 1 || (abs(_x - victim1x) > 1.1 || abs(_y - victim1y) > 1.1 )) {
-//                     if(victim_count == 0) {
-//                         victim1x = _x;
-//                         victim1y = _y;
-//                     }
-//                     handle_victim_detection();  // spin, count victim, start cooldown
-//                     //break;
-//                     turn_relative_angle(90);
-//                 }
-//                 else {
-//                     cout << "too close to previous rescue. finding different human." << endl;
-//                     move_around_pillar = true;
-//                 }
-//             } else {
-//                 cout << "Turning aimlessly" << endl;
-//                 _left_wheel_motor->setVelocity(-0.2 * MAX_SPEED);
-//                 _right_wheel_motor->setVelocity(0.2 * MAX_SPEED);
-
-//                 // cout << "No victim seen — switching to WALL_FOLLOW mode" << endl;
-//                 //  new_mode = WALL_FOLLOW;
-//             }
-//             // }
-//         }
-//         // if (in_cooldown) {
-//         //     cooldown_counter++;
-//         //     if (cooldown_counter >= COOLDOWN_STEPS) {
-//         //         in_cooldown = false;
-//         //         cooldown_counter = 0;
-//         //         cout << "Cooldown complete. Victim detection re-enabled." << endl;
-//         //     }
-//         // }
     
-//         // // ++++ Yellow line detection --> zone transition
-//         // if (!_passed_yellow_line && detect_yellow_line()) {
-//         //     cout << "Yellow line in SIGHT — switching to YELLOW_CROSS func" << endl;
-//         //         new_mode = YELLOW_CROSS;
-//         //         break;
-//         //     }
-//         if (victim_count >= 2) {
-//             return;
-//         }
-//     }
-// }
+    for(int i = 0; i < 10; i++) {
+        _left_wheel_motor->setVelocity(0.5 * MAX_SPEED);
+        _right_wheel_motor->setVelocity(0.5 * MAX_SPEED);
+        step(_time_step);
+        _left_wheel_motor->setVelocity(0 * MAX_SPEED);
+        _right_wheel_motor->setVelocity(0 * MAX_SPEED);
+    }
+}
 
 void MyRobot::rescue_procedure() {
     cout << "Starting rescue" << endl;
@@ -241,15 +166,20 @@ void MyRobot::rescue_procedure() {
 
         if (detect_victim()) {
             cout << "First victim detected!" << endl;
-            bug_to_victim();
-
+            const bool bug_results = bug_to_victim();
+            if(!bug_results) {
+                continue;
+            }
 
             const double compass_val = *(_my_compass->getValues());
             // Save location of first victim
-            victim1x = _x + cos(compass_val + M_PI);
-            victim1y = _y + sin(compass_val + M_PI);
+            victim1x = _x + cos(compass_val);
+            victim1y = _y + sin(compass_val);
+            cout << "Self: (" << _x << ", " << _y << ")" << endl;
+            cout << "Bearing: (" << victim1x << ", " << victim1y << ")" << endl;
 
             handle_victim_detection();
+            turn_relative_angle(90);
             break;  // Exit to start structured second search
         }
 
@@ -266,23 +196,25 @@ void MyRobot::rescue_procedure() {
         print_odometry();
 
         // === Wall-follow for 5 seconds ===
-        for (int i = 0; i < 100; ++i) {  // 80 steps × 64ms ≈ 5s
+        for (int i = 0; i < 120; ++i) {  // 80 steps × 64ms ≈ 5s
             if (step(_time_step) == -1) break;
 
             wall_follow_step();  // wall follow for 5s
 
             if (detect_victim()) {
                 // Avoid double-counting same victim
+                cout << "Second victim found during wall-follow!" << endl;
+                if(!bug_to_victim()) {
+                    continue;
+                }
                 const double compass_val = *(_my_compass->getValues());
-                double dist_from_first = abs(_x + cos(compass_val + M_PI) - victim1x) + abs(_y + sin(compass_val + M_PI) - victim1y);
+                double dist_from_first = abs(_x + cos(compass_val) - victim1x) + abs(_y + sin(compass_val) - victim1y);
                 if (dist_from_first > 1.1) {
-                    cout << "Second victim found during wall-follow!" << endl;
-                    bug_to_victim();
                     handle_victim_detection();
                     second_victim_found = true;
                     break;
                 } else {
-                    cout << "Victim too close to first — ignoring." << endl;
+                    cout << "Victim too close to first — ignoring. " << dist_from_first << endl;
                 }
             }
         }
@@ -294,11 +226,13 @@ void MyRobot::rescue_procedure() {
         spin_in_place();
 
         if (detect_victim()) {
-                const double compass_val = *(_my_compass->getValues());
-                double dist_from_first = abs(_x + cos(compass_val + M_PI) - victim1x) + abs(_y + sin(compass_val + M_PI) - victim1y);
+            cout << "Second victim found during spin!" << endl;
+            if(!bug_to_victim()) {
+                continue;
+            }
+            const double compass_val = *(_my_compass->getValues());
+            double dist_from_first = abs(_x + cos(compass_val) - victim1x) + abs(_y + sin(compass_val) - victim1y);
             if (dist_from_first > 1.1) {
-                cout << "Second victim found during spin!" << endl;
-                bug_to_victim();
                 handle_victim_detection();
                 second_victim_found = true;
                 break;
@@ -321,6 +255,11 @@ void MyRobot::go_to_point(double x, double y)
     double back_right = 0.0, front_right = 0.0; // initialize distance sensor values
     double back_left = 0.0, front_left = 0.0;
     double compass_angle = 0.0;
+    if(_x < _x_goal) {
+        _theta_goal = 180;
+    } else {
+        _theta_goal = 0;
+    }
 
     // original while commented for testing as goal is different (no coordinates)
 
@@ -344,7 +283,7 @@ void MyRobot::go_to_point(double x, double y)
         //     update_theta_goal();
         // }
         
-        update_theta_goal();
+        // update_theta_goal();
 
         // read the sensors
         back_right = _distance_sensor[2]->getValue();
@@ -380,11 +319,24 @@ void MyRobot::go_to_point(double x, double y)
         case WALL_FOLLOW:
 
             // Original wall-follow transitions
+            // get out of loop
+            if(_backing_direction) { 
+                // wall on right, but if there's a wall on left and the goal is to the left, follow left.
+                if(front_left > DISTANCE_LIMIT && back_left > DISTANCE_LIMIT && angular_range_check(_theta_goal - 120, _theta_goal - 60, compass_angle)) {
+                    _backing_direction = !_backing_direction;
+                }
+            } else if (!_backing_direction){
+                if(front_right > DISTANCE_LIMIT && back_right > DISTANCE_LIMIT && angular_range_check(_theta_goal + 60, _theta_goal + 120, compass_angle)) {
+                    _backing_direction = !_backing_direction;
+                }
+            }
+
             // break off from wall when free
-            if(compass_angle > _theta_goal - 120 && compass_angle < _theta_goal - 60 && back_left == 0 && front_left == 0) {
+            // cout << "angles: compass: " << compass_angle << " goal: " << _theta_goal << endl; 
+            if(angular_range_check(_theta_goal - 120, _theta_goal - 60, compass_angle) && back_left == 0 && front_left == 0) {
                 new_mode = ORIENT;
             }
-            if(compass_angle < _theta_goal + 120 && compass_angle > _theta_goal + 60 && back_right == 0 && front_right == 0) {
+            if(angular_range_check(_theta_goal + 60, _theta_goal + 120, compass_angle) && back_right == 0 && front_right == 0) {
                 new_mode = ORIENT;
             }
             // turn interior corner
@@ -481,13 +433,13 @@ void MyRobot::go_to_point(double x, double y)
             break;
         case WALL_FOLLOW:
             if(_backing_direction) { 
-                // wall on left
-                if(back_right > DISTANCE_LIMIT && back_right > front_right) {
-                    _left_speed = FOLLOW_SPEED;
-                    _right_speed = FOLLOW_SPEED * SLOW_FACTOR;
-                } else {
+                // wall on right
+                if(front_right > DISTANCE_LIMIT && back_right < front_right) {
                     _left_speed = FOLLOW_SPEED * SLOW_FACTOR;
                     _right_speed = FOLLOW_SPEED;
+                } else {
+                    _left_speed = FOLLOW_SPEED;
+                    _right_speed = FOLLOW_SPEED * SLOW_FACTOR;
                 }
             } else if (!_backing_direction){
                 if(front_left > DISTANCE_LIMIT && back_left < front_left) {
@@ -497,9 +449,6 @@ void MyRobot::go_to_point(double x, double y)
                     _left_speed = FOLLOW_SPEED * SLOW_FACTOR;
                     _right_speed = FOLLOW_SPEED;
                 }
-            }
-            else {
-                cout << "error here" << endl;
             }
             break;
         case TURN_LEFT:
@@ -672,7 +621,7 @@ bool MyRobot::detect_yellow_line() {
     // if (z_pos < 6.0) {
     //     return false;      // Too close, probably first line
     // }
-    if (( _x_goal > 0 && _x < _x_goal) || (_x_goal < 0 && _x > _x_goal)) {
+    if (( _x_goal > 0 && _x < _x_goal) || (_x_goal < 0 && _x > _x_goal + 2)) {
         return false;
     }
 
@@ -719,16 +668,45 @@ bool MyRobot::detect_victim() {
             int g = _front_cam->imageGetGreen(image, width, x, y);
             int b = _front_cam->imageGetBlue(image, width, x, y);
 
-            if (g > 120 && g > r + 47 && g > b + 47) {
+            if (g > 100 && g > r + 42 && g > b + 42) {
                 green_pixel_count++;
             }
         }
     }
 
-    //cout << "Green pixels (center): " << green_pixel_count << endl;
+    if(green_pixel_count > 0) {
+        cout << "Green pixels (center): " << green_pixel_count << endl;
+    }
 
-    return green_pixel_count > 120;  // threshold can be tuned
+    return green_pixel_count > 80;  // threshold can be tuned
 }
+
+// for center of image
+double MyRobot::center_victim() {
+    const unsigned char* image = _front_cam->getImage();
+    int width = _front_cam->getWidth();
+    int height = _front_cam->getHeight();
+    int green_pixel_count = 0;
+    int green_pixel_x = 0;
+
+    for (int y = 0; y < height; y += 2) {
+        for (int x = 0; x < width; x += 2) {
+            int r = _front_cam->imageGetRed(image, width, x, y);
+            int g = _front_cam->imageGetGreen(image, width, x, y);
+            int b = _front_cam->imageGetBlue(image, width, x, y);
+
+            if (g > 100 && g > r + 42 && g > b + 42) {
+                green_pixel_count++;
+                green_pixel_x += x;
+            }
+        }
+    }
+    if(green_pixel_count == 0) {
+        return 0;
+    }
+    return green_pixel_x / green_pixel_count - (width / 2.0);
+}
+
 
 bool MyRobot::has_crossed_yellow_line() {
     const double* pos = _my_gps->getValues();
@@ -769,20 +747,20 @@ void MyRobot::handle_victim_detection() {
     for (int i = 0; i < 30; ++i) step(_time_step);
 }
 
-void MyRobot::bug_to_victim() {
+bool MyRobot::bug_to_victim() {
     cout << "Approaching victim..." << endl;
 
     const double APPROACH_SPEED = MAX_SPEED * 0.2;  // slow, controlled approach
     const double STOP_DISTANCE = 350.0;             // stop when front sensors > this (tune as needed)
     const double STOP_DISTANCE_SINGLE_REGISTER = 150.0;             
 
-    const int MAX_APPROACH_STEPS = 100;             // timeout to prevent infinite loop
+    // const int MAX_APPROACH_STEPS = 800;             // timeout to prevent infinite loop
 
     // if only 1 sensor triggered, stop distance 150, otherwise for 2, 350
 
     int steps = 0;
 
-    while (step(_time_step) != -1 && steps < MAX_APPROACH_STEPS) {
+    while (step(_time_step) != -1 /*&& steps < MAX_APPROACH_STEPS*/) {
         steps++;
         compute_odometry();
 
@@ -790,18 +768,18 @@ void MyRobot::bug_to_victim() {
         double front_left = _distance_sensor[0]->getValue();
         double front_right = _distance_sensor[1]->getValue();
         double front_avg = (front_left + front_right) * 0.5;
-        cout << "Front left: " << front_left << endl;
-        cout << "Front right: " << front_right << endl;
+        // cout << "Front left: " << front_left << endl;
+        // cout << "Front right: " << front_right << endl;
         // for (int i = 0; i < 7; i++) {
         //     std::cout << "Sensor " << i << ": " << _distance_sensor[i]->getValue() << std::endl;
         // }
 
-        cout << "Front avg: " << front_avg << endl;
+        // cout << "Front avg: " << front_avg << endl;
 
         // STOP if above 2 sensor threshold
         if (front_left > 0 && front_right > 0) {
             double front_avg = (front_left + front_right) * 0.5;
-            std::cout << "Front avg: " << front_avg << std::endl;
+            // std::cout << "Front avg: " << front_avg << std::endl;
 
             if (front_avg > STOP_DISTANCE) {
                 std::cout << "Victim within 1 meter — stopping approach." << std::endl;
@@ -815,24 +793,31 @@ void MyRobot::bug_to_victim() {
             }
         }
         else {
-            std::cout << "Sensors reading zero — target may be too far." << std::endl;
+            // std::cout << "Sensors reading zero — target may be too far." << std::endl;
         }
         ///*** new
 
         // Optionally, stop if green is no longer detected
-        if (!detect_victim()) {
-            cout << "Lost sight of green object — abort approach." << endl;
-            break;
-        }
+        // if (!detect_victim()) {
+        //     cout << "Lost sight of green object — abort approach." << endl;
+        //     return false;
+        // }
          // Resume forward movement
-        _left_wheel_motor->setVelocity(APPROACH_SPEED);
-        _right_wheel_motor->setVelocity(APPROACH_SPEED);
+        double average_pixels = center_victim();
+        // cout << "avg x: "  << average_pixels << endl;         
+        _left_wheel_motor->setVelocity(APPROACH_SPEED + max(-2.0, min(2.0, average_pixels / 24)));
+        _right_wheel_motor->setVelocity(APPROACH_SPEED - max(-2.0, min(2.0, average_pixels / 24)));
     }
+    // if(steps >= MAX_APPROACH_STEPS) {
+    //     cout << "Timed out: took too many steps to approach victim" << endl;
+    //     return false;
+    // }
 
     // Final stop
     _left_wheel_motor->setVelocity(0);
     _right_wheel_motor->setVelocity(0);
     step(_time_step);
+    return true;
 }
 
 
@@ -953,7 +938,33 @@ void MyRobot::wall_follow_step() {
             _right_speed = FOLLOW_SPEED;
         }
     }
+    
+    if(_distance_sensor[0]->getValue() > SHORT_LIMIT || _distance_sensor[1]->getValue() > SHORT_LIMIT) {
+        if(_backing_direction) {
+            _left_speed = -FOLLOW_SPEED;
+            _right_speed = FOLLOW_SPEED;
+        } else {
+            _left_speed = FOLLOW_SPEED;
+            _right_speed = -FOLLOW_SPEED;
+        }
+    }
 
     _left_wheel_motor->setVelocity(_left_speed);
     _right_wheel_motor->setVelocity(_right_speed);
+}
+
+
+bool MyRobot::angular_range_check(double low, double high, double check) {
+    if(low < 0) {low += 360;}
+    if(low >= 360) {low -= 360;}
+    if(high < 0) {high += 360;}
+    if(high >= 360) {high -= 360;}
+    if(check < 0) {check += 360;}
+    if(check >= 360) {check -= 360;}
+    
+    if(low < high) {
+        return check >= low && check < high;
+    } else {
+        return !(check < low && check >= high);
+    }
 }

@@ -125,6 +125,9 @@ class MyRobot : public Robot {
 
         bool detect_victim();
 
+        // allow robot to track and follow victim by camera
+        double center_victim();
+
         bool _passed_yellow_line;
 
         bool has_crossed_yellow_line();
@@ -143,7 +146,7 @@ class MyRobot : public Robot {
 
         static const int COOLDOWN_STEPS = 1000 / 64;  // 1 seconds
 
-        void bug_to_victim();
+        bool bug_to_victim();
 
         void turn_relative_angle(double degrees);
 
@@ -155,7 +158,7 @@ class MyRobot : public Robot {
 
         void wall_follow_step();
 
-
+        bool angular_range_check(double low, double high, double check);
 
 
     private:
