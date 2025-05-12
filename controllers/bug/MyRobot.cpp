@@ -179,7 +179,7 @@ void MyRobot::rescue_procedure() {
             cout << "Bearing: (" << victim1x << ", " << victim1y << ")" << endl;
 
             handle_victim_detection();
-            turn_relative_angle(90);
+            turn_relative_angle(-90);
             break;  // Exit to start structured second search
         }
 
@@ -196,7 +196,7 @@ void MyRobot::rescue_procedure() {
         print_odometry();
 
         // === Wall-follow for 5 seconds ===
-        for (int i = 0; i < 120; ++i) {  // 80 steps × 64ms ≈ 5s
+        for (int i = 0; i < 200; ++i) {  // 80 steps × 64ms ≈ 5s
             if (step(_time_step) == -1) break;
 
             wall_follow_step();  // wall follow for 5s
@@ -640,7 +640,7 @@ bool MyRobot::detect_yellow_line() {
             
             //std::cout << "red: " << r << " g:   " << g << endl;
             // (r-g) checks to see difference of red/green values is close as necesary for yellow
-            if (r > 100 && g > 100 && b < 60 && abs(r - g) < 30) {
+            if (r > 90 && g > 90 && b < 60 && abs(r - g) < 30) {
                 yellow_pixel_count++;
             }
             // if(yellow_pixel_count > 0) {
@@ -649,7 +649,7 @@ bool MyRobot::detect_yellow_line() {
         }
     }
 
-    return  yellow_pixel_count > 50;
+    return  yellow_pixel_count > 45;
 }
 
 // for center of image
