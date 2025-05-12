@@ -141,7 +141,7 @@ class MyRobot : public Robot {
 
         void spin_in_place();
 
-        static const int COOLDOWN_STEPS = 15000 / 64;  // 15 seconds
+        static const int COOLDOWN_STEPS = 1000 / 64;  // 1 seconds
 
         void bug_to_victim();
 

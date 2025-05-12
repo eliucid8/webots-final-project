@@ -113,7 +113,7 @@ void MyRobot::run() {
     if(step(_time_step) != -1) {
         _x = _my_gps->getValues()[2];
         _y = _my_gps->getValues()[0];
-        _x_goal = 16.0 + _x;
+        _x_goal = 18.0 + _x;
         _y_goal = _y;
         cout << "Goal: " << _x_goal << ", " << _y_goal << endl;
         start_x = _x;
@@ -125,14 +125,6 @@ void MyRobot::run() {
 
     // find and rescue humans;
     rescue_procedure();
-    // ====NOTE: Find green pillars here====
-    // while (step(_time_step) != -1) {
-    //     go_to_point(_x_goal, _y_goal);
-
-    //     // add return home part *****
-    // }
-    // cout << "test" << endl;
-
 
     // all to be added to while above *****
     if (victim_count >= 2 && !returning_rescue) {
@@ -140,53 +132,87 @@ void MyRobot::run() {
         _x_goal = start_x;
         _y_goal = start_y;
         returning_rescue = true;
-        cout << "All rescued, heading towards start: (" << start_x << ", " << start_y << ")" << endl;
     }
-    // ** need to disregard points while in zone now UNTIL victim_rescued = 2
-    // while (step(_time_step) != -1) {
-    //     if (detect_victim()) {
-    //         cout << "Green object detected!" << endl;
-    //         break;
-    //     }
-    //     else {
-    //         cout << "No green object detected yet." << endl;
-    //     }
-    // }
-    // =====GREEN PILLAR CODE ABOVE
+
     go_to_point(start_x, start_y);
     cout << "Start Reached, GPS: (" << _my_gps->getValues()[2] << ", " << _my_gps->getValues()[0] << ")" << endl;
 }
 
 void MyRobot::rescue_procedure() {
     cout << "Starting rescue" << endl;
+    double victim1x = 0.0;
+    double victim1y = 0.0;
+
+    bool move_around_pillar = false;
 
     while(step(_time_step) != -1) {
-        cout << "Passed Yellow Line: " << _passed_yellow_line << endl;
+        // cout << "Passed Yellow Line: " << _passed_yellow_line << endl;
         // yellow line exit turnaround test *****
         check_and_handle_turnaround();
+        compute_odometry();
+        print_odometry();
 
+        if(move_around_pillar) {
+            cout << "Moving around pillar" << endl;
+            double back_right = _distance_sensor[2]->getValue();
+            double front_right = _distance_sensor[3]->getValue();
+            double front_left = _distance_sensor[4]->getValue();
+            double back_left = _distance_sensor[5]->getValue();
+            const double FOLLOW_SPEED = MAX_SPEED * 0.3;
+            const double SLOW_FACTOR = 0.5;
+            if(back_right > DISTANCE_LIMIT && back_right > front_right) {
+                _left_speed = FOLLOW_SPEED;
+                _right_speed = FOLLOW_SPEED * SLOW_FACTOR;
+            } else {
+                _left_speed = FOLLOW_SPEED * SLOW_FACTOR;
+                _right_speed = FOLLOW_SPEED;
+            }
+            _left_wheel_motor->setVelocity(_left_speed);
+            _right_wheel_motor->setVelocity(_right_speed);
+
+            const double dist_from_find =abs(_x - victim1x) + abs(_y - victim1y);
+            cout << "distance from first pillar:" << dist_from_find << endl;
+            if(dist_from_find > 1) {
+
+                move_around_pillar = false;
+            }
+        } 
+        else {
+        
         // Victim detection logic
-        if (/*_passed_yellow_line && */victim_count < 2 && !in_cooldown) {
+        // if (/*_passed_yellow_line && */victim_count < 2 && !in_cooldown) {
             if (detect_victim()) {
-                cout << "victim bug" << endl;
                 cout << "Victim green found " << endl;
                 // move toward victim
                 bug_to_victim();
-                handle_victim_detection();  // spin, count victim, start cooldown
-                //break;
+                if(victim_count < 1 || (abs(_x - victim1x) > 1.1 || abs(_y - victim1y) > 1.1 )) {
+                    if(victim_count == 0) {
+                        victim1x = _x;
+                        victim1y = _y;
+                    }
+                    handle_victim_detection();  // spin, count victim, start cooldown
+                    //break;
+                    turn_relative_angle(90);
+                }
+                else {
+                    cout << "too close to previous rescue. finding different human." << endl;
+                    move_around_pillar = true;
+                }
             } else {
+                cout << "Turning aimlessly" << endl;
                 _left_wheel_motor->setVelocity(-0.2 * MAX_SPEED);
                 _right_wheel_motor->setVelocity(0.2 * MAX_SPEED);
             }
+            // }
         }
-        if (in_cooldown) {
-            cooldown_counter++;
-            if (cooldown_counter >= COOLDOWN_STEPS) {
-                in_cooldown = false;
-                cooldown_counter = 0;
-                cout << "Cooldown complete. Victim detection re-enabled." << endl;
-            }
-        }
+        // if (in_cooldown) {
+        //     cooldown_counter++;
+        //     if (cooldown_counter >= COOLDOWN_STEPS) {
+        //         in_cooldown = false;
+        //         cooldown_counter = 0;
+        //         cout << "Cooldown complete. Victim detection re-enabled." << endl;
+        //     }
+        // }
     
         // // ++++ Yellow line detection --> zone transition
         // if (!_passed_yellow_line && detect_yellow_line()) {
@@ -194,6 +220,9 @@ void MyRobot::rescue_procedure() {
         //         new_mode = YELLOW_CROSS;
         //         break;
         //     }
+        if (victim_count >= 2) {
+            return;
+        }
     }
 }
 
@@ -529,7 +558,7 @@ void MyRobot::print_odometry()
 
 bool MyRobot::goal_reached()
 {
-    const float DIST_ERROR = 0.05;
+    const float DIST_ERROR = 0.5;
     float x_error = abs(_x - _x_goal);
     float y_error = abs(_y - _y_goal);
     return x_error <= DIST_ERROR && y_error <= DIST_ERROR;
@@ -694,6 +723,7 @@ void MyRobot::bug_to_victim() {
 
     while (step(_time_step) != -1 && steps < MAX_APPROACH_STEPS) {
         steps++;
+        compute_odometry();
 
         // Check distance sensors 
         double front_left = _distance_sensor[3]->getValue();
@@ -750,6 +780,7 @@ void MyRobot::spin_in_place() {
     const double SPIN_SPEED = MAX_SPEED * 0.3;
 
     for (int i = 0; i < 200; ++i) {
+        compute_odometry();
         _left_wheel_motor->setVelocity(-SPIN_SPEED);
         _right_wheel_motor->setVelocity(SPIN_SPEED);
 
@@ -789,6 +820,7 @@ void MyRobot::turn_relative_angle(double degrees) {
     _right_wheel_motor->setVelocity(0);
 
     while (step(_time_step) != -1) {
+        compute_odometry();
         double current_angle = convert_bearing_to_degrees(_my_compass->getValues());
 
         // Calculate angular difference
@@ -801,12 +833,13 @@ void MyRobot::turn_relative_angle(double degrees) {
 
         // Set turning speed based on direction
         double speed = MAX_SPEED * 0.2;
+        cout << "error: " << error << endl;
         if (error > 0) {
-            _left_wheel_motor->setVelocity(speed);
-            _right_wheel_motor->setVelocity(-speed);
-        } else {
             _left_wheel_motor->setVelocity(-speed);
             _right_wheel_motor->setVelocity(speed);
+        } else {
+            _left_wheel_motor->setVelocity(speed);
+            _right_wheel_motor->setVelocity(-speed);
         }
     }
 
