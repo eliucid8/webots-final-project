@@ -108,7 +108,7 @@ MyRobot::~MyRobot()
 
 void MyRobot::run() {
 
-    double start_x, start_y;
+    double start_x = 0.0, start_y = 0.0;
     // get initial position via gps
     if(step(_time_step) != -1) {
         _x = _my_gps->getValues()[2];
@@ -150,7 +150,6 @@ void MyRobot::rescue_procedure() {
         // yellow line exit turnaround test *****
         check_and_handle_turnaround();
         compute_odometry();
-        print_odometry();
 
         if(move_around_pillar) {
             cout << "Moving around pillar" << endl;
@@ -170,7 +169,8 @@ void MyRobot::rescue_procedure() {
             _left_wheel_motor->setVelocity(_left_speed);
             _right_wheel_motor->setVelocity(_right_speed);
 
-            const double dist_from_find =abs(_x - victim1x) + abs(_y - victim1y);
+            const double compass_val = *(_my_compass->getValues());
+            const double dist_from_find =abs(_x + cos(compass_val + M_PI) - victim1x) + abs(_y + sin(compass_val + M_PI) - victim1y);
             cout << "distance from first pillar:" << dist_from_find << endl;
             if(dist_from_find > 1) {
 
@@ -183,12 +183,16 @@ void MyRobot::rescue_procedure() {
         // if (/*_passed_yellow_line && */victim_count < 2 && !in_cooldown) {
             if (detect_victim()) {
                 cout << "Victim green found " << endl;
+                
+                const double *compass_val = _my_compass->getValues();
+                
                 // move toward victim
                 bug_to_victim();
-                if(victim_count < 1 || (abs(_x - victim1x) > 1.1 || abs(_y - victim1y) > 1.1 )) {
+                if(victim_count < 1 || (abs(_x + cos(*compass_val) - victim1x) > 1.1 || _y + sin(*compass_val) - victim1y > 1.1 )) {
                     if(victim_count == 0) {
-                        victim1x = _x;
-                        victim1y = _y;
+                        const double *compass_val = _my_compass->getValues();
+                        victim1x = _x + cos(*compass_val + M_PI);
+                        victim1y = _y + sin(*compass_val + M_PI);
                     }
                     handle_victim_detection();  // spin, count victim, start cooldown
                     //break;
@@ -199,7 +203,7 @@ void MyRobot::rescue_procedure() {
                     move_around_pillar = true;
                 }
             } else {
-                cout << "Turning aimlessly" << endl;
+                // cout << "Turning aimlessly" << endl;
                 _left_wheel_motor->setVelocity(-0.2 * MAX_SPEED);
                 _right_wheel_motor->setVelocity(0.2 * MAX_SPEED);
             }
@@ -241,20 +245,19 @@ void MyRobot::go_to_point(double x, double y)
     //while (step(_time_step) != -1 && !this->goal_reached())
     while (step(_time_step) != -1)
     {
-        
         // update location via odometry
         this->compute_odometry();
         if (verbose) {
             this->print_odometry();
         }
         // check if we are close to goal
-        if(this->goal_reached()) {
+        if(detect_yellow_line()) {
+        // if(this->goal_reached()) {
             _left_wheel_motor->setVelocity(0);
             _right_wheel_motor->setVelocity(0);
             break;
         }
 
-        
         // if (!_passed_yellow_line && !returning_rescue) {
         //     update_theta_goal();
         // }
@@ -330,8 +333,6 @@ void MyRobot::go_to_point(double x, double y)
                     new_mode = FORWARD;      // Still navigating toward goal
                 }
             }
-        break;
-
         break;
 
         // ++++++ added yellow line testing
@@ -589,61 +590,35 @@ bool MyRobot::detect_yellow_line() {
     // if (z_pos < 6.0) {
     //     return false;      // Too close, probably first line
     // }
-    if (_x < _x_goal - 3.0) {
+    if (_x < _x_goal) {
         return false;
     }
 
-    const unsigned char* image = _front_cam->getImage();
-    int width = _front_cam->getWidth();
-    int height = _front_cam->getHeight();
+    const unsigned char* image = _spher_cam->getImage();
+    int width = _spher_cam->getWidth();
+    int height = _spher_cam->getHeight();
     int yellow_pixel_count = 0;
 
-    // Scan bottom third of the image where the floor is visible
-    for (int y = height * 2 / 3; y < height; y += 2) {
+    // Scan middle half of image
+    for (int y = height / 4; y < 3 * height / 4; y += 2) {
         for (int x = 0; x < width; x += 2) {
-            int r = _front_cam->imageGetRed(image, width, x, y);
-            int g = _front_cam->imageGetGreen(image, width, x, y);
-            int b = _front_cam->imageGetBlue(image, width, x, y);
+            int r = _spher_cam->imageGetRed(image, width, x, y);
+            int g = _spher_cam->imageGetGreen(image, width, x, y);
+            int b = _spher_cam->imageGetBlue(image, width, x, y);
             
             //std::cout << "red: " << r << " g:   " << g << endl;
             // (r-g) checks to see difference of red/green values is close as necesary for yellow
-            if (r > 160 && g > 160 && b < 80 && abs(r - g) < 30) {
+            if (r > 100 && g > 100 && b < 60 && abs(r - g) < 30) {
                 yellow_pixel_count++;
-                //std::cout << "count" << endl;
-
             }
+            // if(yellow_pixel_count > 0) {
+            //     std::cout << "yellow count" << yellow_pixel_count << endl;
+            // }
         }
     }
+
     return  yellow_pixel_count > 50;
 }
-
-// for checking whole image
-// bool MyRobot::detect_victim() {
-//     const unsigned char* image = _front_cam->getImage();
-//     int width = _front_cam->getWidth();
-//     int height = _front_cam->getHeight();
-//     int green_pixel_count = 0;
-
-//     // loop through image rows, check every 2 pixels for performance optimisation
-//     for (int y = 0; y < height; y +=2) {
-//         for (int x = 0; x < width; x+= 2) {
-//             int r = _front_cam->imageGetRed(image, width, x, y);
-//             int g = _front_cam->imageGetGreen(image, width, x, y);
-//             int b = _front_cam->imageGetBlue(image, width, x, y);
-
-//             // check if green (g) is dominant component
-//             // greater than 60 and at least 10 more than both red (r) and blue (b)
-//             //std::cout << "Green: " << g << endl;
-//             if (g > 60 && g > r + 10 && g > b + 10) {
-//                 green_pixel_count++;
-//         }
-//     }
-//    std::cout << "Green pixels detected: " << green_pixel_count << std::endl;
-
-//     // bool will return true if green_pixel_count > 100 (threshold number)
-//     return green_pixel_count > 30; 
-// }
-// }
 
 // for center of image
 bool MyRobot::detect_victim() {
@@ -716,8 +691,8 @@ void MyRobot::bug_to_victim() {
     cout << "Approaching victim..." << endl;
 
     const double APPROACH_SPEED = MAX_SPEED * 0.2;  // slow, controlled approach
-    const double STOP_DISTANCE = 500.0;             // stop when front sensors > this (tune as needed)
-    const int MAX_APPROACH_STEPS = 100;             // timeout to prevent infinite loop
+    const double STOP_DISTANCE = 400.0;             // stop when front sensors > this (tune as needed)
+    const int MAX_APPROACH_STEPS = 500;             // timeout to prevent infinite loop
 
     int steps = 0;
 
@@ -726,13 +701,11 @@ void MyRobot::bug_to_victim() {
         compute_odometry();
 
         // Check distance sensors 
-        double front_left = _distance_sensor[3]->getValue();
-        double front_right = _distance_sensor[4]->getValue();
-        double front_avg = (front_left + front_right) * 0.5;
-        cout << "Front avg: " << front_avg << endl;
+        double front_avg = (_distance_sensor[0]->getValue() + _distance_sensor[1]->getValue()) * 0.5;
+        // cout << "Front avg: " << front_avg << endl;
 
         // Stop if within target distance
-        if (front_avg < STOP_DISTANCE) {
+        if (front_avg > STOP_DISTANCE) {
             std::cout << "Victim within 1 meter — stopping approach." << std::endl;
             break;
         }
@@ -762,7 +735,6 @@ void MyRobot::bug_to_victim() {
          // Resume forward movement
         _left_wheel_motor->setVelocity(APPROACH_SPEED);
         _right_wheel_motor->setVelocity(APPROACH_SPEED);
-        step(_time_step);  // take one step forward
     }
 
     // Final stop
@@ -816,7 +788,7 @@ void MyRobot::turn_relative_angle(double degrees) {
 
     cout << "Turning from " << start_angle << "° to " << target_angle << "°" << endl;
 
-     _left_wheel_motor->setVelocity(0);
+    _left_wheel_motor->setVelocity(0);
     _right_wheel_motor->setVelocity(0);
 
     while (step(_time_step) != -1) {
@@ -833,7 +805,7 @@ void MyRobot::turn_relative_angle(double degrees) {
 
         // Set turning speed based on direction
         double speed = MAX_SPEED * 0.2;
-        cout << "error: " << error << endl;
+        // cout << "error: " << error << endl;
         if (error > 0) {
             _left_wheel_motor->setVelocity(-speed);
             _right_wheel_motor->setVelocity(speed);
