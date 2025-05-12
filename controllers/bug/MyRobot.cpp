@@ -113,7 +113,7 @@ void MyRobot::run() {
     if(step(_time_step) != -1) {
         _x = _my_gps->getValues()[2];
         _y = _my_gps->getValues()[0];
-        _x_goal = 18.0 + _x;
+        _x_goal = 17.0 + _x;
         _y_goal = _y;
         cout << "Goal: " << _x_goal << ", " << _y_goal << endl;
         start_x = _x;
@@ -560,8 +560,8 @@ bool MyRobot::goal_reached()
 {
     const float DIST_ERROR = 0.5;
     float x_error = abs(_x - _x_goal);
-    float y_error = abs(_y - _y_goal);
-    return x_error <= DIST_ERROR && y_error <= DIST_ERROR;
+    // float y_error = abs(_y - _y_goal);
+    return x_error <= DIST_ERROR /*&& y_error <= DIST_ERROR*/;
     // return false;
 }
 //////////////////////////////////////////////
